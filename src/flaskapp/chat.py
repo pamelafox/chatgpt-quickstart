@@ -49,7 +49,7 @@ def chat_handler():
             if event["choices"][0]["delta"].get("content") is not None:
                 response_message = event["choices"][0]["delta"]["content"]
                 current_app.logger.info("Sending '%s'", response_message)
-                json_data = json.dumps({"text": response_message, "sender": "assistant"})
+                json_data = json.dumps({"text": response_message})
                 yield f"event:message\ndata: {json_data}\n\n"
         yield "event: end\ndata: stream\n\n"
 
