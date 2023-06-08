@@ -95,7 +95,7 @@
             }).then(function(json) {
                 messageDiv.innerHTML = "";
                 const message = json.response;
-                messageDiv.innerHTML += message.replace("\n", "<br/>");
+                messageDiv.innerHTML += message.replace(/\n/g, "<br/>");
                 messageDiv.scrollIntoView();
             });
             messageTextArea.value = "";
