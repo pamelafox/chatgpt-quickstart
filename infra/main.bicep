@@ -24,10 +24,8 @@ param openAiSkuName string = ''
 param openAiDeploymentCapacity int = 30
 param openAiApiVersion string = ''
 
-param useAuthentication bool = false
-param clientId string = ''
-@secure()
-param clientSecret string = ''
+param useAuthentication bool = true
+
 param tenantId string = ''
 param loginEndpoint string = ''
 
@@ -84,6 +82,17 @@ module logAnalyticsWorkspace 'core/monitor/loganalytics.bicep' = {
   }
 }
 
+module registration 'appregistration.bicep' = {
+  name: 'reg'
+  scope: resourceGroup
+  params: {
+    keyVaultName: '${prefix}-kv'
+    location: location
+    tags: tags
+    principalId: principalId
+  }
+}
+
 // Container apps host (including container registry)
 module containerApps 'core/host/container-apps.bicep' = {
   name: 'container-apps'
@@ -114,8 +123,8 @@ module aca 'aca.bicep' = {
     openAiApiVersion: openAiApiVersion
     exists: acaExists
     useAuthentication: useAuthentication
-    clientId: clientId
-    clientSecret: clientSecret
+    clientId: useAuthentication ? registration.outputs.clientAppId : ''
+    clientCertificateThumbprint: useAuthentication ? registration.outputs.certThumbprint : ''
     tenantId: tenantId
     loginEndpoint: loginEndpoint
   }
@@ -161,4 +170,3 @@ output SERVICE_ACA_IMAGE_NAME string = aca.outputs.SERVICE_ACA_IMAGE_NAME
 output AZURE_CONTAINER_ENVIRONMENT_NAME string = containerApps.outputs.environmentName
 output AZURE_CONTAINER_REGISTRY_ENDPOINT string = containerApps.outputs.registryLoginServer
 output AZURE_CONTAINER_REGISTRY_NAME string = containerApps.outputs.registryName
-

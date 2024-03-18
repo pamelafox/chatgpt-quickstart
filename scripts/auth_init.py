@@ -212,6 +212,7 @@ def get_credential(tenantId: str) -> AsyncTokenCredential:
 
 
 async def main():
+    return
     if not test_authentication_enabled():
         print("Not setting up authentication...")
         exit(0)
