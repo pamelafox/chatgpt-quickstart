@@ -2,6 +2,7 @@ import logging
 import os
 
 from quart import Quart
+from quart_schema import QuartSchema
 
 
 def create_app():
@@ -11,6 +12,7 @@ def create_app():
         logging.basicConfig(level=logging.DEBUG)
 
     app = Quart(__name__)
+    QuartSchema(app)
 
     from . import chat  # noqa
 

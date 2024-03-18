@@ -1,5 +1,6 @@
 import json
 import os
+from dataclasses import dataclass
 
 import azure.identity.aio
 import openai
@@ -8,9 +9,9 @@ from quart import (
     Response,
     current_app,
     render_template,
-    request,
     stream_with_context,
 )
+from quart_schema import validate_request
 
 bp = Blueprint("chat", __name__, template_folder="templates", static_folder="static")
 
@@ -72,9 +73,22 @@ async def index():
     return await render_template("index.html")
 
 
+@dataclass
+class ChatRequest:
+    message: str
+
+
+@dataclass
+class ChatResponseHeaders:
+    transfer_encoding: str = "chunked"
+    content_type: str = "application/json-lines"
+
+
 @bp.post("/chat")
-async def chat_handler():
-    request_message = (await request.get_json())["message"]
+@validate_request(ChatRequest)
+# @validate_response(List[ChatCompletionChunk], 200, ChatResponseHeaders)
+async def chat_handler(data: ChatRequest):
+    request_message = data.message
 
     @stream_with_context
     async def response_stream():
@@ -89,10 +103,9 @@ async def chat_handler():
         )
         try:
             async for event in await chat_coroutine:
-                current_app.logger.info(event)
                 yield json.dumps(event.model_dump(), ensure_ascii=False) + "\n"
         except Exception as e:
             current_app.logger.error(e)
             yield json.dumps({"error": str(e)}, ensure_ascii=False) + "\n"
 
-    return Response(response_stream())
+    return Response(response_stream(), mimetype="application/json-lines")

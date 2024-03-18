@@ -4,6 +4,7 @@ version = "1.0.0"
 description = "Create a simple chat app using Quart and OpenAI"
 dependencies = [
     "quart",
+    "quart-schema[pydantic]",
     "werkzeug",
     "gunicorn",
     "uvicorn[standard]",

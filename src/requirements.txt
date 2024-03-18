@@ -14,7 +14,6 @@ annotated-types==0.6.0
     # via pydantic
 anyio==4.2.0
     # via
-    #   azure-core
     #   httpx
     #   openai
     #   watchfiles
@@ -119,9 +118,13 @@ priority==2.0.0
 pycparser==2.21
     # via cffi
 pydantic==2.6.1
-    # via openai
+    # via
+    #   openai
+    #   quart-schema
 pydantic-core==2.16.2
     # via pydantic
+pyhumps==3.8.0
+    # via quart-schema
 pyjwt[crypto]==2.8.0
     # via msal
 python-dotenv==1.0.1
@@ -133,6 +136,10 @@ pyyaml==6.0.1
     #   quartapp (pyproject.toml)
     #   uvicorn
 quart==0.19.4
+    # via
+    #   quart-schema
+    #   quartapp (pyproject.toml)
+quart-schema[pydantic]==0.19.1
     # via quartapp (pyproject.toml)
 requests==2.31.0
     # via
