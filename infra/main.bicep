@@ -45,7 +45,7 @@ resource openAiResourceGroup 'Microsoft.Resources/resourceGroups@2021-04-01' exi
 var prefix = '${name}-${resourceToken}'
 
 var openAiDeploymentName = 'chatgpt'
-module openAi 'core/ai/cognitiveservices.bicep' = {
+module openAi 'core/ai/cognitiveservices.bicep' = if (!useAuthentication) {
   name: 'openai'
   scope: openAiResourceGroup
   params: {
@@ -119,7 +119,7 @@ module aca 'aca.bicep' = {
     containerAppsEnvironmentName: containerApps.outputs.environmentName
     containerRegistryName: containerApps.outputs.registryName
     openAiDeploymentName: openAiDeploymentName
-    openAiEndpoint: openAi.outputs.endpoint
+    openAiEndpoint: useAuthentication ? '' : openAi.outputs.endpoint
     openAiApiVersion: openAiApiVersion
     exists: acaExists
     useAuthentication: useAuthentication
@@ -156,10 +156,10 @@ output AZURE_LOCATION string = location
 
 output AZURE_OPENAI_CHATGPT_DEPLOYMENT string = openAiDeploymentName
 output AZURE_OPENAI_API_VERSION string = openAiApiVersion
-output AZURE_OPENAI_ENDPOINT string = openAi.outputs.endpoint
-output AZURE_OPENAI_RESOURCE string = openAi.outputs.name
+output AZURE_OPENAI_ENDPOINT string = useAuthentication ? '' : openAi.outputs.endpoint
+output AZURE_OPENAI_RESOURCE string = useAuthentication ? '' : openAi.outputs.name
 output AZURE_OPENAI_RESOURCE_GROUP string = openAiResourceGroup.name
-output AZURE_OPENAI_SKU_NAME string = openAi.outputs.skuName
+output AZURE_OPENAI_SKU_NAME string = useAuthentication ? '' : openAi.outputs.skuName
 output AZURE_OPENAI_RESOURCE_GROUP_LOCATION string = openAiResourceGroup.location
 
 output SERVICE_ACA_IDENTITY_PRINCIPAL_ID string = aca.outputs.SERVICE_ACA_IDENTITY_PRINCIPAL_ID
