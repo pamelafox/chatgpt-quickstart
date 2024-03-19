@@ -35,12 +35,6 @@
       "useAuthentication": {
         "value": "${AZURE_USE_AUTHENTICATION=false}"
       },
-      "clientId": {
-        "value": "${AZURE_CLIENT_APP_ID}"
-      },
-      "clientSecret": {
-        "value": "${AZURE_CLIENT_APP_SECRET}"
-      },
       "tenantId": {
         "value": "${AZURE_AUTH_TENANT_ID}"
       },

@@ -13,13 +13,12 @@ param openAiApiVersion string
 
 @description('Enable Auth')
 param useAuthentication bool
+param clientId string
+@secure()
+param clientCertificateThumbprint string
 
 param tenantId string
 param loginEndpoint string
-
-param clientId string = ''
-@secure()
-param clientCertificateThumbprint string = ''
 
 // the issuer is different depending if we are in a workforce or external tenant
 var openIdIssuer = empty(tenantId) ? '${environment().authentication.loginEndpoint}${tenant().tenantId}/v2.0' : 'https://${loginEndpoint}/${tenantId}/v2.0'
@@ -63,7 +62,6 @@ module app 'core/host/container-app-upsert.bicep' = {
       }
     ]
     targetPort: 50505
-    secrets: []
   }
 }
 
@@ -73,8 +71,8 @@ module auth 'core/host/container-apps-auth.bicep' = if (useAuthentication) {
   params: {
     name: app.outputs.name
     clientId: clientId
-    clientCertificateThumbprint: clientCertificateThumbprint
     openIdIssuer: openIdIssuer
+    clientCertificateThumbprint: clientCertificateThumbprint
   }
 }
 

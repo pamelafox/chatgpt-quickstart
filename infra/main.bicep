@@ -24,7 +24,7 @@ param openAiSkuName string = ''
 param openAiDeploymentCapacity int = 30
 param openAiApiVersion string = ''
 
-param useAuthentication bool = true
+param useAuthentication bool = false
 
 param tenantId string = ''
 param loginEndpoint string = ''
@@ -65,7 +65,7 @@ module openAi 'core/ai/cognitiveservices.bicep' = if (!useAuthentication) {
         }
         sku: {
           name: 'Standard'
-          capacity: 30
+          capacity: openAiDeploymentCapacity
         }
       }
     ]

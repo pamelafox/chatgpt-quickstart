@@ -7,7 +7,7 @@ param name string
 param clientId string
 
 @secure()
-param clientCertificateThumbprint string = ''
+param clientCertificateThumbprint string
 
 @description('The OpenID issuer of the Microsoft Entra application.')
 param openIdIssuer string
@@ -32,10 +32,8 @@ resource auth 'Microsoft.App/containerApps/authConfigs@2023-05-01' = {
       azureActiveDirectory: {
         registration: {
           clientId: clientId
-          clientSecretCertificateThumbprint: clientCertificateThumbprint
-          // clientSecretCertificateIssuer?
-          // clientSecretCertificateSubjectAlternativeName?
           openIdIssuer: openIdIssuer
+          clientSecretCertificateThumbprint: clientCertificateThumbprint
         }
       }
     }
