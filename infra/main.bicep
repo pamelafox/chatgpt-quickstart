@@ -84,15 +84,16 @@ module aca 'aca.bicep' = {
   }
 }
 
+var issuer = empty(loginEndpoint) ? '${environment().authentication.loginEndpoint}${tenant().tenantId}/v2.0' : 'https://${loginEndpoint}/${tenantId}/v2.0'
 module registration 'appregistration.bicep' = if (useAuthentication) {
   name: 'reg'
   scope: resourceGroup
   params: {
-    keyVaultName: '${take(prefix, 21)}-kv'
-    location: location
-    tags: tags
-    principalId: principalId
-    appEndpoint: aca.outputs.SERVICE_ACA_URI
+    clientAppName: '${prefix}-entra-client-app'
+    clientAppDisplayName: 'OpenAI Quickstart Client App'
+    webAppEndpoint: aca.outputs.SERVICE_ACA_URI
+    webAppIdentityId: aca.outputs.SERVICE_ACA_IDENTITY_PRINCIPAL_ID
+    issuer: issuer
   }
 }
 
@@ -102,9 +103,7 @@ module auth 'core/host/container-apps-auth.bicep' = if (useAuthentication) {
   params: {
     name: aca.outputs.SERVICE_ACA_NAME
     clientId: registration.outputs.clientAppId
-    clientCertificateThumbprint: registration.outputs.certThumbprint
-    openIdIssuer: empty(tenantId) ? '${environment().authentication.loginEndpoint}${tenant().tenantId}/v2.0' : 'https://${loginEndpoint}/${tenantId}/v2.0'
-
+    openIdIssuer: issuer
   }
 }
 

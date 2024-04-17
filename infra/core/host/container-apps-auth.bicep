@@ -6,9 +6,6 @@ param name string
 @description('The client ID of the Microsoft Entra application.')
 param clientId string
 
-@secure()
-param clientCertificateThumbprint string
-
 // the issuer is different depending if we are in a workforce or external tenant
 param openIdIssuer string
 
@@ -32,7 +29,7 @@ resource auth 'Microsoft.App/containerApps/authConfigs@2023-05-01' = {
         registration: {
           clientId: clientId
           openIdIssuer: openIdIssuer
-          clientSecretCertificateThumbprint: clientCertificateThumbprint
+          clientSecretSettingName: 'OVERRIDE_USE_MI_FIC_ASSERTION_CLIENTID'
         }
       }
     }

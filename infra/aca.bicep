@@ -31,6 +31,17 @@ module app 'core/host/container-app-upsert.bicep' = {
         name: 'RUNNING_IN_PRODUCTION'
         value: 'true'
       }
+      {
+        name: 'OVERRIDE_USE_MI_FIC_ASSERTION_CLIENTID'
+        value: acaIdentity.properties.clientId
+      }
+    ]
+    secrets: [
+      {
+        // Invalid name, so presumably doesnt work for Container App?
+        name: 'OVERRIDE_USE_MI_FIC_ASSERTION_CLIENTID'
+        value: acaIdentity.properties.clientId
+      }
     ]
     targetPort: 50505
   }
