@@ -32,45 +32,16 @@ param loginEndpoint string = ''
 var resourceToken = toLower(uniqueString(subscription().id, name, location))
 var tags = { 'azd-env-name': name }
 
+var rgName = '${name}-rg'
+
 resource resourceGroup 'Microsoft.Resources/resourceGroups@2021-04-01' = {
-  name: '${name}-rg'
+  name: rgName
   location: location
   tags: tags
 }
 
-resource openAiResourceGroup 'Microsoft.Resources/resourceGroups@2021-04-01' existing = if (!empty(openAiResourceGroupName)) {
-  name: !empty(openAiResourceGroupName) ? openAiResourceGroupName : resourceGroup.name
-}
-
 var prefix = '${name}-${resourceToken}'
 
-var openAiDeploymentName = 'chatgpt'
-module openAi 'core/ai/cognitiveservices.bicep' = if (!useAuthentication) {
-  name: 'openai'
-  scope: openAiResourceGroup
-  params: {
-    name: !empty(openAiResourceName) ? openAiResourceName : '${resourceToken}-cog'
-    location: !empty(openAiResourceGroupLocation) ? openAiResourceGroupLocation : location
-    tags: tags
-    sku: {
-      name: !empty(openAiSkuName) ? openAiSkuName : 'S0'
-    }
-    deployments: [
-      {
-        name: openAiDeploymentName
-        model: {
-          format: 'OpenAI'
-          name: 'gpt-35-turbo'
-          version: '0613'
-        }
-        sku: {
-          name: 'Standard'
-          capacity: openAiDeploymentCapacity
-        }
-      }
-    ]
-  }
-}
 
 module logAnalyticsWorkspace 'core/monitor/loganalytics.bicep' = {
   name: 'loganalytics'
@@ -82,16 +53,7 @@ module logAnalyticsWorkspace 'core/monitor/loganalytics.bicep' = {
   }
 }
 
-module registration 'appregistration.bicep' = {
-  name: 'reg'
-  scope: resourceGroup
-  params: {
-    keyVaultName: '${prefix}-kv'
-    location: location
-    tags: tags
-    principalId: principalId
-  }
-}
+
 
 // Container apps host (including container registry)
 module containerApps 'core/host/container-apps.bicep' = {
@@ -118,49 +80,35 @@ module aca 'aca.bicep' = {
     identityName: '${prefix}-id-aca'
     containerAppsEnvironmentName: containerApps.outputs.environmentName
     containerRegistryName: containerApps.outputs.registryName
-    openAiDeploymentName: openAiDeploymentName
-    openAiEndpoint: useAuthentication ? '' : openAi.outputs.endpoint
-    openAiApiVersion: openAiApiVersion
     exists: acaExists
-    useAuthentication: useAuthentication
-    clientId: useAuthentication ? registration.outputs.clientAppId : ''
-    clientCertificateThumbprint: useAuthentication ? registration.outputs.certThumbprint : ''
-    tenantId: tenantId
-    loginEndpoint: loginEndpoint
   }
 }
 
-
-module openAiRoleUser 'core/security/role.bicep' = if (createRoleForUser) {
-  scope: openAiResourceGroup
-  name: 'openai-role-user'
+module registration 'appregistration.bicep' = if (useAuthentication) {
+  name: 'reg'
+  scope: resourceGroup
   params: {
+    keyVaultName: '${take(prefix, 21)}-kv'
+    location: location
+    tags: tags
     principalId: principalId
-    roleDefinitionId: '5e0bd9bd-7b93-4f28-af87-19fc36ad61bd'
-    principalType: 'User'
+    appEndpoint: aca.outputs.SERVICE_ACA_URI
   }
 }
 
-
-module openAiRoleBackend 'core/security/role.bicep' = {
-  scope: openAiResourceGroup
-  name: 'openai-role-backend'
+module auth 'core/host/container-apps-auth.bicep' = if (useAuthentication) {
+  name: 'aca-container-apps-auth-module'
+  scope: resourceGroup
   params: {
-    principalId: aca.outputs.SERVICE_ACA_IDENTITY_PRINCIPAL_ID
-    roleDefinitionId: '5e0bd9bd-7b93-4f28-af87-19fc36ad61bd'
-    principalType: 'ServicePrincipal'
+    name: aca.outputs.SERVICE_ACA_NAME
+    clientId: registration.outputs.clientAppId
+    clientCertificateThumbprint: registration.outputs.certThumbprint
+    openIdIssuer: empty(tenantId) ? '${environment().authentication.loginEndpoint}${tenant().tenantId}/v2.0' : 'https://${loginEndpoint}/${tenantId}/v2.0'
+
   }
 }
 
 output AZURE_LOCATION string = location
-
-output AZURE_OPENAI_CHATGPT_DEPLOYMENT string = openAiDeploymentName
-output AZURE_OPENAI_API_VERSION string = openAiApiVersion
-output AZURE_OPENAI_ENDPOINT string = useAuthentication ? '' : openAi.outputs.endpoint
-output AZURE_OPENAI_RESOURCE string = useAuthentication ? '' : openAi.outputs.name
-output AZURE_OPENAI_RESOURCE_GROUP string = openAiResourceGroup.name
-output AZURE_OPENAI_SKU_NAME string = useAuthentication ? '' : openAi.outputs.skuName
-output AZURE_OPENAI_RESOURCE_GROUP_LOCATION string = openAiResourceGroup.location
 
 output SERVICE_ACA_IDENTITY_PRINCIPAL_ID string = aca.outputs.SERVICE_ACA_IDENTITY_PRINCIPAL_ID
 output SERVICE_ACA_NAME string = aca.outputs.SERVICE_ACA_NAME

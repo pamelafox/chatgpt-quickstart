@@ -9,9 +9,8 @@ param clientId string
 @secure()
 param clientCertificateThumbprint string
 
-@description('The OpenID issuer of the Microsoft Entra application.')
+// the issuer is different depending if we are in a workforce or external tenant
 param openIdIssuer string
-
 
 resource app 'Microsoft.App/containerApps@2023-05-01' existing = {
   name: name

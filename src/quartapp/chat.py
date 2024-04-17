@@ -27,40 +27,6 @@ async def configure_openai():
         bp.openai_client = openai.AsyncOpenAI(
             **client_args,
         )
-    else:
-        # Use an Azure OpenAI endpoint instead,
-        # either with a key or with keyless authentication
-        if os.getenv("AZURE_OPENAI_KEY"):
-            # Authenticate using an Azure OpenAI API key
-            # This is generally discouraged, but is provided for developers
-            # that want to develop locally inside the Docker container.
-            current_app.logger.info("Using Azure OpenAI with key")
-            client_args["api_key"] = os.getenv("AZURE_OPENAI_KEY")
-        else:
-            if client_id := os.getenv("AZURE_OPENAI_CLIENT_ID"):
-                # Authenticate using a user-assigned managed identity on Azure
-                # See aca.bicep for value of AZURE_OPENAI_CLIENT_ID
-                current_app.logger.info(
-                    "Using Azure OpenAI with managed identity for client ID %s",
-                    client_id,
-                )
-                default_credential = azure.identity.aio.ManagedIdentityCredential(client_id=client_id)
-            else:
-                # Authenticate using the default Azure credential chain
-                # See https://docs.microsoft.com/azure/developer/python/azure-sdk-authenticate#defaultazurecredential
-                # This will *not* work inside a Docker container.
-                current_app.logger.info("Using Azure OpenAI with default credential")
-                default_credential = azure.identity.aio.DefaultAzureCredential(
-                    exclude_shared_token_cache_credential=True
-                )
-            client_args["azure_ad_token_provider"] = azure.identity.aio.get_bearer_token_provider(
-                default_credential, "https://cognitiveservices.azure.com/.default"
-            )
-        bp.openai_client = openai.AsyncAzureOpenAI(
-            api_version=os.getenv("AZURE_OPENAI_API_VERSION") or "2024-02-15-preview",
-            azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
-            **client_args,
-        )
 
 
 @bp.after_app_serving

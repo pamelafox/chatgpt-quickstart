@@ -19,7 +19,7 @@ param secretsPermissions array = [
 ]
 
 @description('Specifies the ID of the user-assigned managed identity.')
-param identityName string = 'DeploymentScriptsIdentity'
+param identityName string = 'DeploymentScriptsIdentityACA'
 
 @description('Specifies the permissions to certificates in the vault. Valid values are: all, get, list, update, create, import, delete, recover, backup, restore, manage contacts, manage certificate authorities, get certificate authorities, list certificate authorities, set certificate authorities, delete certificate authorities.')
 param certificatesPermissions array = [
@@ -28,9 +28,10 @@ param certificatesPermissions array = [
   'update'
   'create'
 ]
-param certificateName string = 'DeploymentScripts2019'
+param certificateName string = 'DeploymentScriptsACA'
 param subjectName string = 'CN=contoso.com'
 param utcValue string = utcNow()
+param appEndpoint string
 
 resource webIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
   name: identityName
@@ -79,7 +80,7 @@ resource keyVault 'Microsoft.KeyVault/vaults@2021-06-01-preview' = {
 
 
 resource createAddCertificate 'Microsoft.Resources/deploymentScripts@2020-10-01' = {
-  name: 'createAddCertificate'
+  name: 'createAddCertificateACA'
   location: location
   identity: {
     type: 'UserAssigned'
@@ -144,12 +145,14 @@ resource createAddCertificate 'Microsoft.Resources/deploymentScripts@2020-10-01'
           }
         } while ($operation.Status -ne 'completed')
 
-        $Secret = Get-AzKeyVaultSecret -VaultName $vaultName -Name $certificateName
+        $certValue = (Get-AzKeyVaultSecret -VaultName $vaultName -Name $certificateName).SecretValue | ConvertFrom-SecureString -AsPlainText
+        $pfxCert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2 -ArgumentList @([Convert]::FromBase64String($certValue),"",[System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::Exportable)
+        $publicKey = [System.Convert]::ToBase64String($pfxCert.GetRawCertData())
 
         $DeploymentScriptOutputs['certStart'] = $newCert.notBefore
         $DeploymentScriptOutputs['certEnd'] = $newCert.expires
         $DeploymentScriptOutputs['certThumbprint'] = $newCert.Thumbprint
-        $DeploymentScriptOutputs['certKey'] = ConvertFrom-SecureString $Secret.SecretValue
+        $DeploymentScriptOutputs['certKey'] = $publicKey
         $newCert | Out-String
       }
     '''
@@ -162,18 +165,21 @@ resource createAddCertificate 'Microsoft.Resources/deploymentScripts@2020-10-01'
 }
 
 resource clientApp 'Microsoft.Graph/applications@beta' = {
-  uniqueName: 'WebApp123'
-  displayName: 'ChatGPT Sample Client App TODO-123' // TODO: replace with a unique value
+  uniqueName: 'WebApp123ACA'
+  displayName: 'ChatGPT Sample Client App TODO-ACA' // TODO: replace with a unique value
   signInAudience: 'AzureADMyOrg'
   web: {
       redirectUris: [
         'http://localhost:50505/.auth/login/aad/callback'
+        '${appEndpoint}/.auth/login/aad/callback'
       ]
       implicitGrantSettings: {enableIdTokenIssuance: true}
   }
   spa: {
     redirectUris: [
       'http://localhost:50505/redirect'
+      '${appEndpoint}/redirect'
+
     ]
   }
   requiredResourceAccess: [
